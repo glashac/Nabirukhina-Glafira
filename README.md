@@ -25,3 +25,9 @@
 API документировано JavaDoc в коде. Для тестирования используйте Postman или curl.
 
 #### Архитектура backend
+'CarRentalServerApplication' — главный класс Spring Boot.
+'model/Car' — JPA-сущность автомобиля (id, модель, тип, год, цена, доступность).
+repository/CarRepository — интерфейс репозитория с методами поиска (findByModelContainingIgnoreCase, findByTypeContainingIgnoreCase).
+controller/CarController — REST-контроллер с CRUD и статистикой (Stream API для агрегации).
+config/DataInitializer — инициализация демо-данных (4 автомобиля при старте).
+БД: H2 (in-memory), DDL-auto=create-drop. Миграции не нужны, т.к. JPA генерирует схему.
