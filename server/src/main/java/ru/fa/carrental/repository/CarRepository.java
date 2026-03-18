@@ -10,4 +10,5 @@ import java.util.List;
 public interface CarRepository extends JpaRepository<Car, Long> {
     List<Car> findByTypeContainingIgnoreCase(String type);
     List<Car> findByModelContainingIgnoreCase(String model);
+    List<Car> findByCategoryId(Long categoryId);
 }

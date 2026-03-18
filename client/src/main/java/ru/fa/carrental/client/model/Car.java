@@ -6,6 +6,7 @@ public class Car {
     private final LongProperty id = new SimpleLongProperty();
     private final StringProperty model = new SimpleStringProperty();
     private final StringProperty type = new SimpleStringProperty();
+    private final ObjectProperty<CarCategory> category = new SimpleObjectProperty<>();
     private final IntegerProperty year = new SimpleIntegerProperty();
     private final DoubleProperty pricePerDay = new SimpleDoubleProperty();
     private final BooleanProperty available = new SimpleBooleanProperty();
@@ -44,6 +45,18 @@ public class Car {
 
     public void setType(String type) {
         this.type.set(type);
+    }
+
+    public CarCategory getCategory() {
+        return category.get();
+    }
+
+    public ObjectProperty<CarCategory> categoryProperty() {
+        return category;
+    }
+
+    public void setCategory(CarCategory category) {
+        this.category.set(category);
     }
 
     public int getYear() {

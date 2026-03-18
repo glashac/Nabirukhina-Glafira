@@ -3,6 +3,7 @@ package ru.fa.carrental.client.api;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.fa.carrental.client.model.Car;
+import ru.fa.carrental.client.model.CarCategory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -33,17 +34,23 @@ public class CarApi {
     /**
      * Retrieves the list of cars from the server.
      *
-     * @param query optional query string for filtering by model
+     * @param query      optional query string for filtering by model
+     * @param categoryId optional category id
      * @return list of cars, or {@code null} if an error occurred
      */
-    public List<Car> listCars(String query) {
+    public List<Car> listCars(String query, Long categoryId) {
         try {
-            String url = baseUrl;
+            StringBuilder url = new StringBuilder(baseUrl);
+            String separator = "?";
             if (query != null && !query.isBlank()) {
-                url += "?q=" + query.replace(" ", "%20");
+                url.append(separator).append("q=").append(query.replace(" ", "%20"));
+                separator = "&";
+            }
+            if (categoryId != null) {
+                url.append(separator).append("categoryId=").append(categoryId);
             }
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
+                    .uri(URI.create(url.toString()))
                     .GET()
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -53,6 +60,10 @@ public class CarApi {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public List<Car> listCars(String query) {
+        return listCars(query, null);
     }
 
     /**
@@ -132,6 +143,24 @@ public class CarApi {
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    /**
+     * Lists all categories registered on the server.
+     */
+    public List<CarCategory> listCategories() {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl.replace("/cars", "/categories")))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            return mapper.readValue(response.body(), new TypeReference<>() {
+            });
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            return Collections.emptyList();
         }
     }
 

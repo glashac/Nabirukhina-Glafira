@@ -1,7 +1,7 @@
 # Информационно-справочная система компании по аренде автомобилей
 
 Клиент-серверное приложение для управления арендой автомобилей.  
-**Технологии**: Java 17, Spring Boot 3, JavaFX, JPA/Hibernate, H2, Maven.
+**Технологии**: Java 17, Spring Boot 3, JavaFX, JPA/Hibernate, H2, Maven, TypeScript, CSS.
 
 ## Содержание
 

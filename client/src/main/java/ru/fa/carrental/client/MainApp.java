@@ -3,6 +3,7 @@ package ru.fa.carrental.client;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -10,6 +11,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import ru.fa.carrental.client.api.CarApi;
 import ru.fa.carrental.client.model.Car;
+import ru.fa.carrental.client.model.CarCategory;
 
 import java.util.List;
 import java.util.prefs.Preferences;
@@ -28,11 +30,17 @@ public class MainApp extends Application {
     private static final String PREF_Y = "window.y";
 
     private final CarApi carApi = new CarApi("http://localhost:8080/api/cars");
+    private List<CarCategory> categories = List.of();
     private final TableView<Car> table = new TableView<>();
 
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Автопрокат - Клиент");
+
+        categories = carApi.listCategories();
+        if (categories == null) {
+            categories = List.of();
+        }
 
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(16));
@@ -56,7 +64,7 @@ public class MainApp extends Application {
         refresh.setOnAction(e -> refreshTable());
 
         Button add = new Button("Добавить");
-        add.setOnAction(e -> new CarFormDialog(null, carApi, this::refreshTable).showAndWait());
+        add.setOnAction(e -> new CarFormDialog(null, carApi, this::refreshTable, categories).showAndWait());
 
         Button edit = new Button("Редактировать");
         edit.setOnAction(e -> {
@@ -65,7 +73,7 @@ public class MainApp extends Application {
                 showAlert(Alert.AlertType.INFORMATION, "Выберите запись", "Пожалуйста, выберите автомобиль для редактирования.");
                 return;
             }
-            new CarFormDialog(selected, carApi, this::refreshTable).showAndWait();
+            new CarFormDialog(selected, carApi, this::refreshTable, categories).showAndWait();
         });
 
         Button delete = new Button("Удалить");
@@ -83,9 +91,17 @@ public class MainApp extends Application {
 
         TextField filterField = new TextField();
         filterField.setPromptText("Фильтр по модели...");
-        filterField.setOnAction(e -> refreshTable(filterField.getText()));
 
-        return new ToolBar(refresh, add, edit, delete, new Separator(), new Label("Поиск:"), filterField);
+        ComboBox<CarCategory> categoryFilter = new ComboBox<>();
+        categoryFilter.getItems().add(null);
+        categoryFilter.getItems().addAll(categories);
+        categoryFilter.setPromptText("Категория");
+
+        categoryFilter.setOnAction(e -> refreshTable(filterField.getText(), categoryFilter.getValue()));
+        filterField.setOnAction(e -> refreshTable(filterField.getText(), categoryFilter.getValue()));
+
+        return new ToolBar(refresh, add, edit, delete, new Separator(), new Label("Поиск:"), filterField,
+                new Label("Категория:"), categoryFilter);
     }
 
     private TableView<Car> createTable() {
@@ -98,6 +114,12 @@ public class MainApp extends Application {
         TableColumn<Car, String> typeCol = new TableColumn<>("Тип");
         typeCol.setCellValueFactory(cell -> cell.getValue().typeProperty());
 
+        TableColumn<Car, String> categoryCol = new TableColumn<>("Категория");
+        categoryCol.setCellValueFactory(cell -> {
+            CarCategory cat = cell.getValue().getCategory();
+            return new SimpleStringProperty(cat != null ? cat.getName() : "");
+        });
+
         TableColumn<Car, Integer> yearCol = new TableColumn<>("Год");
         yearCol.setCellValueFactory(cell -> cell.getValue().yearProperty().asObject());
 
@@ -107,7 +129,7 @@ public class MainApp extends Application {
         TableColumn<Car, Boolean> availableCol = new TableColumn<>("Доступен");
         availableCol.setCellValueFactory(cell -> cell.getValue().availableProperty());
 
-        table.getColumns().addAll(idCol, modelCol, typeCol, yearCol, priceCol, availableCol);
+        table.getColumns().addAll(idCol, modelCol, typeCol, categoryCol, yearCol, priceCol, availableCol);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         return table;
     }
@@ -130,11 +152,12 @@ public class MainApp extends Application {
     }
 
     private void refreshTable() {
-        refreshTable(null);
+        refreshTable(null, null);
     }
 
-    private void refreshTable(String query) {
-        List<Car> cars = carApi.listCars(query);
+    private void refreshTable(String query, CarCategory category) {
+        Long categoryId = category != null ? category.getId() : null;
+        List<Car> cars = carApi.listCars(query, categoryId);
         if (cars == null) {
             showAlert(Alert.AlertType.ERROR, "Ошибка сети", "Не удалось загрузить список автомобилей. Проверьте, запущен ли сервер.");
             return;

@@ -5,8 +5,9 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import ru.fa.carrental.client.api.CarApi;
 import ru.fa.carrental.client.model.Car;
+import ru.fa.carrental.client.model.CarCategory;
 
-import java.util.function.Consumer;
+import java.util.List;
 
 /**
  * Диалоговая форма для добавления или редактирования автомобиля.
@@ -15,17 +16,22 @@ import java.util.function.Consumer;
  */
 public class CarFormDialog extends Dialog<Void> {
     /**
-     * @param car     редактируемый автомобиль (null для создания нового)
-     * @param api     клиент для взаимодействия с сервером
-     * @param onSaved колбэк, вызываемый после успешного сохранения
+     * @param car        редактируемый автомобиль (null для создания нового)
+     * @param api        клиент для взаимодействия с сервером
+     * @param onSaved    колбэк, вызываемый после успешного сохранения
+     * @param categories список доступных категорий (родительская сущность)
      */
-    public CarFormDialog(Car car, CarApi api, Runnable onSaved) {
+    public CarFormDialog(Car car, CarApi api, Runnable onSaved, List<CarCategory> categories) {
         setTitle(car == null ? "Добавить автомобиль" : "Редактировать автомобиль");
 
         getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
         TextField model = new TextField();
         TextField type = new TextField();
+        ComboBox<CarCategory> categoryCombo = new ComboBox<>();
+        categoryCombo.getItems().addAll(categories);
+        categoryCombo.setPromptText("Категория");
+
         TextField year = new TextField();
         TextField price = new TextField();
         CheckBox available = new CheckBox("Доступен");
@@ -33,6 +39,12 @@ public class CarFormDialog extends Dialog<Void> {
         if (car != null) {
             model.setText(car.getModel());
             type.setText(car.getType());
+            if (car.getCategory() != null) {
+                categories.stream()
+                        .filter(c -> c.getId() == car.getCategory().getId())
+                        .findFirst()
+                        .ifPresent(categoryCombo.getSelectionModel()::select);
+            }
             year.setText(String.valueOf(car.getYear()));
             price.setText(String.valueOf(car.getPricePerDay()));
             available.setSelected(car.isAvailable());
@@ -47,11 +59,13 @@ public class CarFormDialog extends Dialog<Void> {
         grid.add(model, 1, 0);
         grid.add(new Label("Тип:"), 0, 1);
         grid.add(type, 1, 1);
-        grid.add(new Label("Год:"), 0, 2);
-        grid.add(year, 1, 2);
-        grid.add(new Label("Цена/день:"), 0, 3);
-        grid.add(price, 1, 3);
-        grid.add(available, 1, 4);
+        grid.add(new Label("Категория:"), 0, 2);
+        grid.add(categoryCombo, 1, 2);
+        grid.add(new Label("Год:"), 0, 3);
+        grid.add(year, 1, 3);
+        grid.add(new Label("Цена/день:"), 0, 4);
+        grid.add(price, 1, 4);
+        grid.add(available, 1, 5);
 
         getDialogPane().setContent(grid);
 
@@ -63,6 +77,7 @@ public class CarFormDialog extends Dialog<Void> {
                     Car toSave = car == null ? new Car() : car;
                     toSave.setModel(model.getText().trim());
                     toSave.setType(type.getText().trim());
+                    toSave.setCategory(categoryCombo.getValue());
                     toSave.setYear(yearValue);
                     toSave.setPricePerDay(priceValue);
                     toSave.setAvailable(available.isSelected());

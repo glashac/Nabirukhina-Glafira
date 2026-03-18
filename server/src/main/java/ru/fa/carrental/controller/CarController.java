@@ -3,6 +3,7 @@ package ru.fa.carrental.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.fa.carrental.model.Car;
+import ru.fa.carrental.repository.CarCategoryRepository;
 import ru.fa.carrental.repository.CarRepository;
 
 import java.util.List;
@@ -19,12 +20,15 @@ import java.util.Optional;
 public class CarController {
 
     private final CarRepository carRepository;
+    private final CarCategoryRepository categoryRepository;
 
     /**
-     * @param carRepository DAO for car persistence
+     * @param carRepository      DAO for car persistence
+     * @param categoryRepository DAO for car categories
      */
-    public CarController(CarRepository carRepository) {
+    public CarController(CarRepository carRepository, CarCategoryRepository categoryRepository) {
         this.carRepository = carRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     /**
@@ -36,12 +40,16 @@ public class CarController {
      */
     @GetMapping
     public List<Car> listCars(@RequestParam(required = false) String q,
-                              @RequestParam(required = false) String type) {
+                              @RequestParam(required = false) String type,
+                              @RequestParam(required = false) Long categoryId) {
         if (q != null && !q.isBlank()) {
             return carRepository.findByModelContainingIgnoreCase(q);
         }
         if (type != null && !type.isBlank()) {
             return carRepository.findByTypeContainingIgnoreCase(type);
+        }
+        if (categoryId != null) {
+            return carRepository.findByCategoryId(categoryId);
         }
         return carRepository.findAll();
     }
@@ -55,6 +63,9 @@ public class CarController {
     @PostMapping
     public Car createCar(@RequestBody Car car) {
         car.setId(null);
+        if (car.getCategory() != null && car.getCategory().getId() != null) {
+            categoryRepository.findById(car.getCategory().getId()).ifPresent(car::setCategory);
+        }
         return carRepository.save(car);
     }
 
@@ -64,6 +75,11 @@ public class CarController {
                 .map(existing -> {
                     existing.setModel(updated.getModel());
                     existing.setType(updated.getType());
+                    if (updated.getCategory() != null && updated.getCategory().getId() != null) {
+                        categoryRepository.findById(updated.getCategory().getId()).ifPresent(existing::setCategory);
+                    } else {
+                        existing.setCategory(null);
+                    }
                     existing.setYear(updated.getYear());
                     existing.setPricePerDay(updated.getPricePerDay());
                     existing.setAvailable(updated.isAvailable());
@@ -92,6 +108,17 @@ public class CarController {
         double min = all.stream().mapToDouble(Car::getPricePerDay).min().orElse(0);
         double max = all.stream().mapToDouble(Car::getPricePerDay).max().orElse(0);
         return ResponseEntity.ok(new Stats(all.size(), avg, min, max));
+    }
+
+    @GetMapping("/category-stats")
+    public ResponseEntity<Map<String, Integer>> categoryStats() {
+        List<Car> all = carRepository.findAll();
+        Map<String, Integer> stats = new HashMap<>();
+        for (Car car : all) {
+            String category = car.getCategory() != null ? car.getCategory().getName() : "Без категории";
+            stats.put(category, stats.getOrDefault(category, 0) + 1);
+        }
+        return ResponseEntity.ok(stats);
     }
 
     public record Stats(int count, double avgPrice, double minPrice, double maxPrice) {

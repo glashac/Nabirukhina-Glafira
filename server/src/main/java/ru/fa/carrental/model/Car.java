@@ -21,6 +21,11 @@ public class Car {
     /** Category or type (e.g. "Premium", "SUV"). */
     private String type;
 
+    /** Category (parent entity). */
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private CarCategory category;
+
     /** Year of manufacture. */
     private int year;
 
@@ -39,6 +44,11 @@ public class Car {
         this.year = year;
         this.pricePerDay = pricePerDay;
         this.available = available;
+    }
+
+    public Car(String model, String type, CarCategory category, int year, double pricePerDay, boolean available) {
+        this(model, type, year, pricePerDay, available);
+        this.category = category;
     }
 
     public Long getId() {
@@ -63,6 +73,14 @@ public class Car {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public CarCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(CarCategory category) {
+        this.category = category;
     }
 
     public int getYear() {

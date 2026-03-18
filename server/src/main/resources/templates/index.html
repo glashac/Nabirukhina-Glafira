@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Rental Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-VkB78jdvrYFy0EFdRgn5nGfAmiso5Y3uMGFk3fXQYI1qCwFVBsz6hrrZqAgR0G72" crossorigin="anonymous">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">Car Rental</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/send-test-email">Отправить тестовое письмо</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div th:if="${mailSent}" class="alert alert-success" role="alert">
+        Тестовое письмо отправлено (проверьте логи/почтовый ящик).
+    </div>
+
+    <h1 class="mb-4">Автопарк</h1>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Модель</th>
+                    <th>Тип</th>
+                    <th>Категория</th>
+                    <th>Год</th>
+                    <th>Цена/день</th>
+                    <th>Доступно</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="car : ${cars}">
+                    <td th:text="${car.model}"></td>
+                    <td th:text="${car.type}"></td>
+                    <td th:text="${car.category != null ? car.category.name : '-'}"></td>
+                    <td th:text="${car.year}"></td>
+                    <td th:text="${car.pricePerDay}"></td>
+                    <td th:text="${car.available} ? 'Да' : 'Нет'"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-lg-6">
+            <canvas id="priceChart" height="240"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+        integrity="sha256-vW8NCO0G0mPjVjUI6qfVnvnOanxkL8fkHrQRKt+vatanY=" crossorigin="anonymous"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var carModels = /*[[${cars.*.model}]]*/ [];
+    var carPrices = /*[[${cars.*.pricePerDay}]]*/ [];
+    /*]]>*/
+</script>
+<script th:src="@{/js/car-stats.js}"></script>
+</body>
+</html>
